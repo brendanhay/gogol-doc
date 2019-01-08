@@ -1,0 +1,446 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DataKinds                  #-}</span><span>
+</span><a name="line-2"></a><span class="hs-pragma">{-# LANGUAGE RankNTypes                  #-}</span><span>
+</span><a name="line-3"></a><span class="hs-pragma">{-# LANGUAGE FlexibleContexts           #-}</span><span>
+</span><a name="line-4"></a><span class="hs-pragma">{-# LANGUAGE FlexibleInstances          #-}</span><span>
+</span><a name="line-5"></a><span class="hs-pragma">{-# LANGUAGE FunctionalDependencies     #-}</span><span>
+</span><a name="line-6"></a><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><a name="line-7"></a><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses      #-}</span><span>
+</span><a name="line-8"></a><span class="hs-pragma">{-# LANGUAGE PolyKinds                  #-}</span><span>
+</span><a name="line-9"></a><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables        #-}</span><span>
+</span><a name="line-10"></a><span class="hs-pragma">{-# LANGUAGE TypeFamilies               #-}</span><span>
+</span><a name="line-11"></a><span class="hs-pragma">{-# LANGUAGE UndecidableInstances       #-}</span><span>
+</span><a name="line-12"></a><span>
+</span><a name="line-13"></a><span class="hs-pragma">{-# OPTIONS_GHC -fno-warn-duplicate-exports #-}</span><span>
+</span><a name="line-14"></a><span>
+</span><a name="line-15"></a><span class="hs-comment">-- |</span><span>
+</span><a name="line-16"></a><span class="hs-comment">-- Module      : Network.Google</span><span>
+</span><a name="line-17"></a><span class="hs-comment">-- Copyright   : (c) 2015-2016 Brendan Hay</span><span>
+</span><a name="line-18"></a><span class="hs-comment">-- License     : Mozilla Public License, v. 2.0.</span><span>
+</span><a name="line-19"></a><span class="hs-comment">-- Maintainer  : Brendan Hay &lt;brendan.g.hay@gmail.com&gt;</span><span>
+</span><a name="line-20"></a><span class="hs-comment">-- Stability   : provisional</span><span>
+</span><a name="line-21"></a><span class="hs-comment">-- Portability : non-portable (GHC extensions)</span><span>
+</span><a name="line-22"></a><span class="hs-comment">--</span><span>
+</span><a name="line-23"></a><span class="hs-comment">-- This module provides a 'Google' monad and common set of operations which</span><span>
+</span><a name="line-24"></a><span class="hs-comment">-- can be performed against the remote Google Service APIs. Typically you will</span><span>
+</span><a name="line-25"></a><span class="hs-comment">-- import this module along with modules from various @gogol-*@ libraries</span><span>
+</span><a name="line-26"></a><span class="hs-comment">-- for the services you wish to communicate with.</span><span>
+</span><a name="line-27"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Network.Google</span><span>
+</span><a name="line-28"></a><span>    </span><span class="hs-special">(</span><span>
+</span><a name="line-29"></a><span>    </span><span class="hs-comment">-- * Usage</span><span>
+</span><a name="line-30"></a><span>    </span><span class="hs-comment">-- $usage</span><span>
+</span><a name="line-31"></a><span>
+</span><a name="line-32"></a><span>    </span><span class="hs-comment">-- * The Google Monad</span><span>
+</span><a name="line-33"></a><span>      </span><a href="Network.Google.html#Google"><span class="hs-identifier hs-type">Google</span></a><span>      </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><a name="line-34"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><a name="line-35"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.html#runGoogle"><span class="hs-identifier hs-var">runGoogle</span></a><span>
+</span><a name="line-36"></a><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">runResourceT</span><span>
+</span><a name="line-37"></a><span>
+</span><a name="line-38"></a><span>    </span><span class="hs-comment">-- * Environment</span><span>
+</span><a name="line-39"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Env.html#Env"><span class="hs-identifier hs-type">Env</span></a><span>
+</span><a name="line-40"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Env.html#HasEnv"><span class="hs-identifier hs-type">HasEnv</span></a><span>      </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><a name="line-41"></a><span>
+</span><a name="line-42"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Env.html#newEnv"><span class="hs-identifier hs-var">newEnv</span></a><span>
+</span><a name="line-43"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Env.html#newEnvWith"><span class="hs-identifier hs-var">newEnvWith</span></a><span>
+</span><a name="line-44"></a><span>
+</span><a name="line-45"></a><span>    </span><span class="hs-comment">-- ** Credentials</span><span>
+</span><a name="line-46"></a><span>    </span><span class="hs-comment">-- $credentials</span><span>
+</span><a name="line-47"></a><span>
+</span><a name="line-48"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Auth.ApplicationDefault.html#getApplicationDefault"><span class="hs-identifier hs-var">getApplicationDefault</span></a><span>
+</span><a name="line-49"></a><span>
+</span><a name="line-50"></a><span>    </span><span class="hs-comment">-- ** Authorization</span><span>
+</span><a name="line-51"></a><span>    </span><span class="hs-comment">-- $authorization</span><span>
+</span><a name="line-52"></a><span>
+</span><a name="line-53"></a><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">!</span><span class="hs-special">)</span><span>
+</span><a name="line-54"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Auth.Scope.html#allow"><span class="hs-identifier hs-var">allow</span></a><span>
+</span><a name="line-55"></a><span>
+</span><a name="line-56"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Auth.Scope.html#AllowScopes"><span class="hs-identifier hs-type">AllowScopes</span></a><span>
+</span><a name="line-57"></a><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">type</span><span> </span><a href="Network.Google.Auth.Scope.html#HasScope"><span class="hs-identifier hs-type">HasScope</span></a><span>
+</span><a name="line-58"></a><span>
+</span><a name="line-59"></a><span>    </span><span class="hs-comment">-- * Sending Requests</span><span>
+</span><a name="line-60"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.html#send"><span class="hs-identifier hs-var">send</span></a><span>
+</span><a name="line-61"></a><span>
+</span><a name="line-62"></a><span>    </span><span class="hs-comment">-- ** Streaming Media</span><span>
+</span><a name="line-63"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.html#download"><span class="hs-identifier hs-var">download</span></a><span>
+</span><a name="line-64"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.html#upload"><span class="hs-identifier hs-var">upload</span></a><span>
+</span><a name="line-65"></a><span>
+</span><a name="line-66"></a><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Body</span><span>        </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><a name="line-67"></a><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">bodyContentType</span><span>
+</span><a name="line-68"></a><span>
+</span><a name="line-69"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Internal.Body.html#sourceBody"><span class="hs-identifier hs-var">sourceBody</span></a><span>
+</span><a name="line-70"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Internal.Body.html#getMIMEType"><span class="hs-identifier hs-var">getMIMEType</span></a><span>
+</span><a name="line-71"></a><span>
+</span><a name="line-72"></a><span>    </span><span class="hs-comment">-- * Service Configuration</span><span>
+</span><a name="line-73"></a><span>    </span><span class="hs-comment">-- $configuration</span><span>
+</span><a name="line-74"></a><span>
+</span><a name="line-75"></a><span>    </span><span class="hs-comment">-- ** Overriding Defaults</span><span>
+</span><a name="line-76"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Env.html#configure"><span class="hs-identifier hs-var">configure</span></a><span>
+</span><a name="line-77"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Env.html#override"><span class="hs-identifier hs-var">override</span></a><span>
+</span><a name="line-78"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Env.html#timeout"><span class="hs-identifier hs-var">timeout</span></a><span>
+</span><a name="line-79"></a><span>
+</span><a name="line-80"></a><span>    </span><span class="hs-comment">-- ** Lenses</span><span>
+</span><a name="line-81"></a><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">serviceHost</span><span>
+</span><a name="line-82"></a><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">servicePort</span><span>
+</span><a name="line-83"></a><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">servicePath</span><span>
+</span><a name="line-84"></a><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">serviceSecure</span><span>
+</span><a name="line-85"></a><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">serviceTimeout</span><span>
+</span><a name="line-86"></a><span>
+</span><a name="line-87"></a><span>    </span><span class="hs-comment">-- * Handling Errors</span><span>
+</span><a name="line-88"></a><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">AsError</span><span>     </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><a name="line-89"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Internal.Auth.html#AsAuthError"><span class="hs-identifier hs-type">AsAuthError</span></a><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><a name="line-90"></a><span>
+</span><a name="line-91"></a><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">trying</span><span>
+</span><a name="line-92"></a><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">catching</span><span>
+</span><a name="line-93"></a><span>
+</span><a name="line-94"></a><span>    </span><span class="hs-comment">-- * Logging</span><span>
+</span><a name="line-95"></a><span>    </span><span class="hs-comment">-- $logging</span><span>
+</span><a name="line-96"></a><span>
+</span><a name="line-97"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Internal.Logger.html#Logger"><span class="hs-identifier hs-type">Logger</span></a><span>
+</span><a name="line-98"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Internal.Logger.html#LogLevel"><span class="hs-identifier hs-type">LogLevel</span></a><span>    </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><a name="line-99"></a><span>
+</span><a name="line-100"></a><span>    </span><span class="hs-comment">-- ** Constructing a Logger</span><span>
+</span><a name="line-101"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Internal.Logger.html#newLogger"><span class="hs-identifier hs-var">newLogger</span></a><span>
+</span><a name="line-102"></a><span>
+</span><a name="line-103"></a><span>    </span><span class="hs-comment">-- * Constructing a HTTP Manager</span><span>
+</span><a name="line-104"></a><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">newManager</span><span>
+</span><a name="line-105"></a><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">tlsManagerSettings</span><span>
+</span><a name="line-106"></a><span>
+</span><a name="line-107"></a><span>    </span><span class="hs-comment">-- * Running Asynchronous Actions</span><span>
+</span><a name="line-108"></a><span>    </span><span class="hs-comment">-- $async</span><span>
+</span><a name="line-109"></a><span>
+</span><a name="line-110"></a><span>    </span><span class="hs-comment">-- * Compute Metadata</span><span>
+</span><a name="line-111"></a><span>    </span><span class="hs-comment">-- $metadata</span><span>
+</span><a name="line-112"></a><span>
+</span><a name="line-113"></a><span>    </span><span class="hs-comment">-- * Re-exported Types</span><span>
+</span><a name="line-114"></a><span>    </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Network.Google.Types</span><span>
+</span><a name="line-115"></a><span>    </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-116"></a><span>
+</span><a name="line-117"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Control.Applicative</span><span>
+</span><a name="line-118"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Control.Exception.Lens</span><span>
+</span><a name="line-119"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Control.Monad</span><span>
+</span><a name="line-120"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Control.Monad.Catch</span><span>
+</span><a name="line-121"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Control.Monad.IO.Unlift</span><span>      </span><span class="hs-special">(</span><span class="hs-identifier hs-type">MonadUnliftIO</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">withRunInIO</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a name="line-122"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Control.Monad.Reader</span><span>
+</span><a name="line-123"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Control.Monad.Trans.Except</span><span>   </span><span class="hs-special">(</span><span class="hs-identifier hs-type">ExceptT</span><span class="hs-special">)</span><span>
+</span><a name="line-124"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Control.Monad.Trans.Identity</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">IdentityT</span><span class="hs-special">)</span><span>
+</span><a name="line-125"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Control.Monad.Trans.List</span><span>     </span><span class="hs-special">(</span><span class="hs-identifier hs-type">ListT</span><span class="hs-special">)</span><span>
+</span><a name="line-126"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Control.Monad.Trans.Maybe</span><span>    </span><span class="hs-special">(</span><span class="hs-identifier hs-type">MaybeT</span><span class="hs-special">)</span><span>
+</span><a name="line-127"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Control.Monad.Trans.Resource</span><span>
+</span><a name="line-128"></a><span>
+</span><a name="line-129"></a><span class="hs-keyword">import</span><span> </span><a href="Network.Google.Auth.html"><span class="hs-identifier">Network.Google.Auth</span></a><span>
+</span><a name="line-130"></a><span class="hs-keyword">import</span><span> </span><a href="Network.Google.Env.html"><span class="hs-identifier">Network.Google.Env</span></a><span>
+</span><a name="line-131"></a><span class="hs-keyword">import</span><span> </span><a href="Network.Google.Internal.Body.html"><span class="hs-identifier">Network.Google.Internal.Body</span></a><span>
+</span><a name="line-132"></a><span class="hs-keyword">import</span><span> </span><a href="Network.Google.Internal.HTTP.html"><span class="hs-identifier">Network.Google.Internal.HTTP</span></a><span>
+</span><a name="line-133"></a><span class="hs-keyword">import</span><span> </span><a href="Network.Google.Internal.Logger.html"><span class="hs-identifier">Network.Google.Internal.Logger</span></a><span>
+</span><a name="line-134"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Network.Google.Prelude</span><span>
+</span><a name="line-135"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Network.Google.Types</span><span>
+</span><a name="line-136"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Network.HTTP.Conduit</span><span>           </span><span class="hs-special">(</span><span class="hs-identifier hs-var">newManager</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">tlsManagerSettings</span><span class="hs-special">)</span><span>
+</span><a name="line-137"></a><span>
+</span><a name="line-138"></a><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-identifier">Control.Monad.Writer.Lazy</span><span>   </span><span class="hs-keyword">as</span><span> </span><span class="hs-identifier">LW</span><span>
+</span><a name="line-139"></a><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-identifier">Control.Monad.Writer.Strict</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="hs-identifier">W</span><span>
+</span><a name="line-140"></a><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-identifier">Control.Monad.RWS.Lazy</span><span>      </span><span class="hs-keyword">as</span><span> </span><span class="hs-identifier">LRW</span><span>
+</span><a name="line-141"></a><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-identifier">Control.Monad.RWS.Strict</span><span>    </span><span class="hs-keyword">as</span><span> </span><span class="hs-identifier">RW</span><span>
+</span><a name="line-142"></a><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-identifier">Control.Monad.State.Lazy</span><span>    </span><span class="hs-keyword">as</span><span> </span><span class="hs-identifier">LS</span><span>
+</span><a name="line-143"></a><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-identifier">Control.Monad.State.Strict</span><span>  </span><span class="hs-keyword">as</span><span> </span><span class="hs-identifier">S</span><span>
+</span><a name="line-144"></a><span>
+</span><a name="line-145"></a><span class="hs-comment">-- | The 'Google' monad containing configuration environment and tracks</span><span>
+</span><a name="line-146"></a><span class="hs-comment">-- resource allocation via 'ResourceT'.</span><span>
+</span><a name="line-147"></a><span class="hs-comment">-- The functions in &quot;Network.Google&quot; are generalised</span><span>
+</span><a name="line-148"></a><span class="hs-keyword">newtype</span><span> </span><a name="Google"><a href="Network.Google.html#Google"><span class="hs-identifier">Google</span></a></a><span> </span><a name="local-6989586621679187378"><a href="#local-6989586621679187378"><span class="hs-identifier">s</span></a></a><span> </span><a name="local-6989586621679187379"><a href="#local-6989586621679187379"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a name="Google"><a href="Network.Google.html#Google"><span class="hs-identifier">Google</span></a></a><span> </span><span class="hs-special">{</span><span> </span><a name="unGoogle"><a href="Network.Google.html#unGoogle"><span class="hs-identifier">unGoogle</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">ReaderT</span><span> </span><span class="hs-special">(</span><a href="Network.Google.Env.html#Env"><span class="hs-identifier hs-type">Env</span></a><span> </span><a href="#local-6989586621679187378"><span class="hs-identifier hs-type">s</span></a><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">ResourceT</span><span> </span><span class="hs-identifier hs-type">IO</span><span class="hs-special">)</span><span> </span><a href="#local-6989586621679187379"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-special">}</span><span>
+</span><a name="line-149"></a><span>    </span><span class="hs-keyword">deriving</span><span>
+</span><a name="line-150"></a><span>        </span><span class="hs-special">(</span><span> </span><span class="hs-identifier hs-type">Functor</span><span>
+</span><a name="line-151"></a><span>        </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Applicative</span><span>
+</span><a name="line-152"></a><span>        </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Alternative</span><span>
+</span><a name="line-153"></a><span>        </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Monad</span><span>
+</span><a name="line-154"></a><span>        </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">MonadPlus</span><span>
+</span><a name="line-155"></a><span>        </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">MonadIO</span><span>
+</span><a name="line-156"></a><span>        </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">MonadThrow</span><span>
+</span><a name="line-157"></a><span>        </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">MonadCatch</span><span>
+</span><a name="line-158"></a><span>        </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">MonadMask</span><span>
+</span><a name="line-159"></a><span>        </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">MonadReader</span><span> </span><span class="hs-special">(</span><a href="Network.Google.Env.html#Env"><span class="hs-identifier hs-type">Env</span></a><span> </span><a href="#local-6989586621679187378"><span class="hs-identifier hs-type">s</span></a><span class="hs-special">)</span><span>
+</span><a name="line-160"></a><span>        </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">MonadResource</span><span>
+</span><a name="line-161"></a><span>        </span><span class="hs-special">)</span><span>
+</span><a name="line-162"></a><span>
+</span><a name="line-163"></a><span class="hs-comment">-- | Run a 'Google' action using the specified environment and</span><span>
+</span><a name="line-164"></a><span class="hs-comment">-- credentials annotated with sufficient authorization scopes.</span><span>
+</span><a name="line-165"></a><span class="hs-identifier">runGoogle</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">MonadResource</span><span> </span><a href="#local-6989586621679187450"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">,</span><span> </span><a href="Network.Google.Env.html#HasEnv"><span class="hs-identifier hs-type">HasEnv</span></a><span> </span><a href="#local-6989586621679187451"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187452"><span class="hs-identifier hs-type">r</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="#local-6989586621679187452"><span class="hs-identifier hs-type">r</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Network.Google.html#Google"><span class="hs-identifier hs-type">Google</span></a><span> </span><a href="#local-6989586621679187451"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187453"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679187450"><span class="hs-identifier hs-type">m</span></a><span> </span><a href="#local-6989586621679187453"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-166"></a><a name="runGoogle"><a href="Network.Google.html#runGoogle"><span class="hs-identifier">runGoogle</span></a></a><span> </span><a name="local-6989586621679187454"><a href="#local-6989586621679187454"><span class="hs-identifier">e</span></a></a><span> </span><a name="local-6989586621679187455"><a href="#local-6989586621679187455"><span class="hs-identifier">m</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">liftResourceT</span><span> </span><span class="hs-operator hs-var">$</span><span> </span><span class="hs-identifier">runReaderT</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">unGoogle</span><span> </span><a href="#local-6989586621679187455"><span class="hs-identifier hs-var">m</span></a><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><a href="#local-6989586621679187454"><span class="hs-identifier hs-var">e</span></a><span> </span><span class="hs-operator hs-var">^.</span><span> </span><a href="Network.Google.Env.html#environment"><span class="hs-identifier hs-var">environment</span></a><span class="hs-special">)</span><span>
+</span><a name="line-167"></a><span>
+</span><a name="line-168"></a><span class="hs-comment">-- | Monads in which 'Google' actions may be embedded.</span><span>
+</span><a name="line-169"></a><span class="hs-comment">--</span><span>
+</span><a name="line-170"></a><span class="hs-comment">-- The functions in &quot;Network.Google&quot; have 'MonadGoogle' constraints to provide</span><span>
+</span><a name="line-171"></a><span class="hs-comment">-- automatic lifting when embedding 'Google' as a layer inside your own</span><span>
+</span><a name="line-172"></a><span class="hs-comment">-- application stack.</span><span>
+</span><a name="line-173"></a><span class="hs-keyword">class</span><span> </span><span class="hs-special">(</span><span> </span><span class="hs-identifier hs-type">Functor</span><span>     </span><a href="#local-6989586621679187376"><span class="hs-identifier hs-type">m</span></a><span>
+</span><a name="line-174"></a><span>      </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Applicative</span><span> </span><a href="#local-6989586621679187376"><span class="hs-identifier hs-type">m</span></a><span>
+</span><a name="line-175"></a><span>      </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Monad</span><span>       </span><a href="#local-6989586621679187376"><span class="hs-identifier hs-type">m</span></a><span>
+</span><a name="line-176"></a><span>      </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">MonadIO</span><span>     </span><a href="#local-6989586621679187376"><span class="hs-identifier hs-type">m</span></a><span>
+</span><a name="line-177"></a><span>      </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">MonadCatch</span><span>  </span><a href="#local-6989586621679187376"><span class="hs-identifier hs-type">m</span></a><span>
+</span><a name="line-178"></a><span>      </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Auth.Scope.html#AllowScopes"><span class="hs-identifier hs-type">AllowScopes</span></a><span> </span><a href="#local-6989586621679187375"><span class="hs-identifier hs-type">s</span></a><span>
+</span><a name="line-179"></a><span>      </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a name="MonadGoogle"><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier">MonadGoogle</span></a></a><span> </span><a name="local-6989586621679187375"><a href="#local-6989586621679187375"><span class="hs-identifier">s</span></a></a><span> </span><a name="local-6989586621679187376"><a href="#local-6989586621679187376"><span class="hs-identifier">m</span></a></a><span> </span><span class="hs-glyph">|</span><span> </span><span class="hs-identifier">m</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier">s</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-180"></a><span>    </span><span class="hs-comment">-- | Lift a computation to the 'Google' monad.</span><span>
+</span><a name="line-181"></a><span>    </span><a name="liftGoogle"><a href="Network.Google.html#liftGoogle"><span class="hs-identifier">liftGoogle</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><a href="Network.Google.html#Google"><span class="hs-identifier hs-type">Google</span></a><span> </span><a href="#local-6989586621679187375"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187377"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679187376"><span class="hs-identifier hs-type">m</span></a><span> </span><a href="#local-6989586621679187377"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-182"></a><span>
+</span><a name="line-183"></a><span class="hs-keyword">instance</span><span> </span><a href="Network.Google.Auth.Scope.html#AllowScopes"><span class="hs-identifier hs-type">AllowScopes</span></a><span> </span><a href="#local-6989586621679187438"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187438"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><a href="Network.Google.html#Google"><span class="hs-identifier hs-type">Google</span></a><span> </span><a href="#local-6989586621679187438"><span class="hs-identifier hs-type">s</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-184"></a><span>    </span><a name="local-8214565720323962277"><a href="Network.Google.html#liftGoogle"><span class="hs-identifier">liftGoogle</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">id</span><span>
+</span><a name="line-185"></a><span>
+</span><a name="line-186"></a><span class="hs-keyword">instance</span><span> </span><span class="hs-identifier hs-type">MonadUnliftIO</span><span> </span><span class="hs-special">(</span><a href="Network.Google.html#Google"><span class="hs-identifier hs-type">Google</span></a><span> </span><a href="#local-6989586621679187435"><span class="hs-identifier hs-type">s</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-187"></a><span>    </span><a name="local-8214565720323886517"><span class="hs-identifier">withRunInIO</span></a><span> </span><a name="local-6989586621679187436"><a href="#local-6989586621679187436"><span class="hs-identifier">inner</span></a></a><span> </span><span class="hs-glyph">=</span><span>
+</span><a name="line-188"></a><span>        </span><a href="Network.Google.html#Google"><span class="hs-identifier hs-var">Google</span></a><span> </span><span class="hs-operator hs-var">$</span><span> </span><span class="hs-identifier hs-var">withRunInIO</span><span> </span><span class="hs-operator hs-var">$</span><span> </span><span class="hs-glyph">\</span><a name="local-6989586621679187437"><a href="#local-6989586621679187437"><span class="hs-identifier">run</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><a name="line-189"></a><span>            </span><a href="#local-6989586621679187436"><span class="hs-identifier hs-var">inner</span></a><span> </span><span class="hs-special">(</span><a href="#local-6989586621679187437"><span class="hs-identifier hs-var">run</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier">unGoogle</span><span class="hs-special">)</span><span>
+</span><a name="line-190"></a><span>    </span><span class="hs-pragma">{-# INLINE</span><span> </span><span class="hs-pragma">withRunInIO</span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><a name="line-191"></a><span>
+</span><a name="line-192"></a><span class="hs-keyword">instance</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187433"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187434"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187433"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">IdentityT</span><span> </span><a href="#local-6989586621679187434"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-193"></a><span>    </span><a name="local-8214565720323962277"><a href="Network.Google.html#liftGoogle"><span class="hs-identifier">liftGoogle</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">lift</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Network.Google.html#liftGoogle"><span class="hs-identifier hs-var">liftGoogle</span></a><span>
+</span><a name="line-194"></a><span>
+</span><a name="line-195"></a><span class="hs-keyword">instance</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187431"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187432"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187431"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">ListT</span><span> </span><a href="#local-6989586621679187432"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-196"></a><span>    </span><a name="local-8214565720323962277"><a href="Network.Google.html#liftGoogle"><span class="hs-identifier">liftGoogle</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">lift</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Network.Google.html#liftGoogle"><span class="hs-identifier hs-var">liftGoogle</span></a><span>
+</span><a name="line-197"></a><span>
+</span><a name="line-198"></a><span class="hs-keyword">instance</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187429"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187430"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187429"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">MaybeT</span><span> </span><a href="#local-6989586621679187430"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-199"></a><span>    </span><a name="local-8214565720323962277"><a href="Network.Google.html#liftGoogle"><span class="hs-identifier">liftGoogle</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">lift</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Network.Google.html#liftGoogle"><span class="hs-identifier hs-var">liftGoogle</span></a><span>
+</span><a name="line-200"></a><span>
+</span><a name="line-201"></a><span class="hs-keyword">instance</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187426"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187427"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187426"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">ExceptT</span><span> </span><a href="#local-6989586621679187428"><span class="hs-identifier hs-type">e</span></a><span> </span><a href="#local-6989586621679187427"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-202"></a><span>    </span><a name="local-8214565720323962277"><a href="Network.Google.html#liftGoogle"><span class="hs-identifier">liftGoogle</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">lift</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Network.Google.html#liftGoogle"><span class="hs-identifier hs-var">liftGoogle</span></a><span>
+</span><a name="line-203"></a><span>
+</span><a name="line-204"></a><span class="hs-keyword">instance</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187423"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187424"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187423"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">ReaderT</span><span> </span><a href="#local-6989586621679187425"><span class="hs-identifier hs-type">r</span></a><span> </span><a href="#local-6989586621679187424"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-205"></a><span>    </span><a name="local-8214565720323962277"><a href="Network.Google.html#liftGoogle"><span class="hs-identifier">liftGoogle</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">lift</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Network.Google.html#liftGoogle"><span class="hs-identifier hs-var">liftGoogle</span></a><span>
+</span><a name="line-206"></a><span>
+</span><a name="line-207"></a><span class="hs-keyword">instance</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187420"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187421"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187420"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">S.StateT</span><span> </span><a href="#local-6989586621679187422"><span class="hs-identifier hs-type">s'</span></a><span> </span><a href="#local-6989586621679187421"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-208"></a><span>    </span><a name="local-8214565720323962277"><a href="Network.Google.html#liftGoogle"><span class="hs-identifier">liftGoogle</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">lift</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Network.Google.html#liftGoogle"><span class="hs-identifier hs-var">liftGoogle</span></a><span>
+</span><a name="line-209"></a><span>
+</span><a name="line-210"></a><span class="hs-keyword">instance</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187417"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187418"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187417"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">LS.StateT</span><span> </span><a href="#local-6989586621679187419"><span class="hs-identifier hs-type">s'</span></a><span> </span><a href="#local-6989586621679187418"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-211"></a><span>    </span><a name="local-8214565720323962277"><a href="Network.Google.html#liftGoogle"><span class="hs-identifier">liftGoogle</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">lift</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Network.Google.html#liftGoogle"><span class="hs-identifier hs-var">liftGoogle</span></a><span>
+</span><a name="line-212"></a><span>
+</span><a name="line-213"></a><span class="hs-keyword">instance</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Monoid</span><span> </span><a href="#local-6989586621679187414"><span class="hs-identifier hs-type">w</span></a><span class="hs-special">,</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187415"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187416"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187415"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">W.WriterT</span><span> </span><a href="#local-6989586621679187414"><span class="hs-identifier hs-type">w</span></a><span> </span><a href="#local-6989586621679187416"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-214"></a><span>    </span><a name="local-8214565720323962277"><a href="Network.Google.html#liftGoogle"><span class="hs-identifier">liftGoogle</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">lift</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Network.Google.html#liftGoogle"><span class="hs-identifier hs-var">liftGoogle</span></a><span>
+</span><a name="line-215"></a><span>
+</span><a name="line-216"></a><span class="hs-keyword">instance</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Monoid</span><span> </span><a href="#local-6989586621679187411"><span class="hs-identifier hs-type">w</span></a><span class="hs-special">,</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187412"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187413"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187412"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">LW.WriterT</span><span> </span><a href="#local-6989586621679187411"><span class="hs-identifier hs-type">w</span></a><span> </span><a href="#local-6989586621679187413"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-217"></a><span>    </span><a name="local-8214565720323962277"><a href="Network.Google.html#liftGoogle"><span class="hs-identifier">liftGoogle</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">lift</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Network.Google.html#liftGoogle"><span class="hs-identifier hs-var">liftGoogle</span></a><span>
+</span><a name="line-218"></a><span>
+</span><a name="line-219"></a><span class="hs-keyword">instance</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Monoid</span><span> </span><a href="#local-6989586621679187406"><span class="hs-identifier hs-type">w</span></a><span class="hs-special">,</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187407"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187408"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187407"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">RW.RWST</span><span> </span><a href="#local-6989586621679187409"><span class="hs-identifier hs-type">r</span></a><span> </span><a href="#local-6989586621679187406"><span class="hs-identifier hs-type">w</span></a><span> </span><a href="#local-6989586621679187410"><span class="hs-identifier hs-type">s'</span></a><span> </span><a href="#local-6989586621679187408"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-220"></a><span>    </span><a name="local-8214565720323962277"><a href="Network.Google.html#liftGoogle"><span class="hs-identifier">liftGoogle</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">lift</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Network.Google.html#liftGoogle"><span class="hs-identifier hs-var">liftGoogle</span></a><span>
+</span><a name="line-221"></a><span>
+</span><a name="line-222"></a><span class="hs-keyword">instance</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Monoid</span><span> </span><a href="#local-6989586621679187380"><span class="hs-identifier hs-type">w</span></a><span class="hs-special">,</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187381"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187382"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187381"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">LRW.RWST</span><span> </span><a href="#local-6989586621679187383"><span class="hs-identifier hs-type">r</span></a><span> </span><a href="#local-6989586621679187380"><span class="hs-identifier hs-type">w</span></a><span> </span><a href="#local-6989586621679187384"><span class="hs-identifier hs-type">s'</span></a><span> </span><a href="#local-6989586621679187382"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-223"></a><span>    </span><a name="local-8214565720323962277"><a href="Network.Google.html#liftGoogle"><span class="hs-identifier">liftGoogle</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">lift</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Network.Google.html#liftGoogle"><span class="hs-identifier hs-var">liftGoogle</span></a><span>
+</span><a name="line-224"></a><span>
+</span><a name="line-225"></a><span class="hs-comment">-- | Send a request, returning the associated response if successful.</span><span>
+</span><a name="line-226"></a><span class="hs-comment">--</span><span>
+</span><a name="line-227"></a><span class="hs-comment">-- Throws 'Error'.</span><span>
+</span><a name="line-228"></a><span class="hs-identifier">send</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187447"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187448"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">,</span><span> </span><a href="Network.Google.Auth.Scope.html#HasScope"><span class="hs-identifier hs-type">HasScope</span></a><span> </span><a href="#local-6989586621679187447"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187449"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">GoogleRequest</span><span> </span><a href="#local-6989586621679187449"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a href="#local-6989586621679187449"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679187448"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Rs</span><span> </span><a href="#local-6989586621679187449"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
+</span><a name="line-229"></a><a name="send"><a href="Network.Google.html#send"><span class="hs-identifier">send</span></a></a><span> </span><a name="local-6989586621679187456"><a href="#local-6989586621679187456"><span class="hs-identifier">x</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Network.Google.html#liftGoogle"><span class="hs-identifier hs-var">liftGoogle</span></a><span> </span><span class="hs-operator hs-var">$</span><span> </span><span class="hs-keyword">do</span><span>
+</span><a name="line-230"></a><span>    </span><a name="local-6989586621679187457"><a href="#local-6989586621679187457"><span class="hs-identifier">e</span></a></a><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-identifier hs-var">ask</span><span>
+</span><a name="line-231"></a><span>    </span><a name="local-6989586621679187458"><a href="#local-6989586621679187458"><span class="hs-identifier">r</span></a></a><span> </span><span class="hs-glyph">&lt;-</span><span> </span><a href="Network.Google.Internal.HTTP.html#perform"><span class="hs-identifier hs-var">perform</span></a><span> </span><a href="#local-6989586621679187457"><span class="hs-identifier hs-var">e</span></a><span> </span><a href="#local-6989586621679187456"><span class="hs-identifier hs-var">x</span></a><span>
+</span><a name="line-232"></a><span>    </span><a href="Network.Google.html#hoistError"><span class="hs-identifier hs-var">hoistError</span></a><span> </span><a href="#local-6989586621679187458"><span class="hs-identifier hs-var">r</span></a><span>
+</span><a name="line-233"></a><span>
+</span><a name="line-234"></a><span class="hs-comment">-- | Send a request returning the associated streaming media response if successful.</span><span>
+</span><a name="line-235"></a><span class="hs-comment">--</span><span>
+</span><a name="line-236"></a><span class="hs-comment">-- Some request data types have two possible responses, the JSON metadata and</span><span>
+</span><a name="line-237"></a><span class="hs-comment">-- a streaming media response. Use 'send' to retrieve the metadata and 'download'</span><span>
+</span><a name="line-238"></a><span class="hs-comment">-- to retrieve the streaming media.</span><span>
+</span><a name="line-239"></a><span class="hs-comment">--</span><span>
+</span><a name="line-240"></a><span class="hs-comment">-- Equivalent to:</span><span>
+</span><a name="line-241"></a><span class="hs-comment">--</span><span>
+</span><a name="line-242"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-243"></a><span class="hs-comment">-- 'send' . 'MediaDownload'</span><span>
+</span><a name="line-244"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-245"></a><span class="hs-comment">--</span><span>
+</span><a name="line-246"></a><span class="hs-comment">-- Throws 'Error'.</span><span>
+</span><a name="line-247"></a><span class="hs-identifier">download</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187444"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187445"><span class="hs-identifier hs-type">m</span></a><span>
+</span><a name="line-248"></a><span>            </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Auth.Scope.html#HasScope"><span class="hs-identifier hs-type">HasScope</span></a><span>    </span><a href="#local-6989586621679187444"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">MediaDownload</span><span> </span><a href="#local-6989586621679187446"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
+</span><a name="line-249"></a><span>            </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">GoogleRequest</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">MediaDownload</span><span> </span><a href="#local-6989586621679187446"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
+</span><a name="line-250"></a><span>            </span><span class="hs-special">)</span><span>
+</span><a name="line-251"></a><span>         </span><span class="hs-glyph">=&gt;</span><span> </span><a href="#local-6989586621679187446"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-252"></a><span>         </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679187445"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Rs</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">MediaDownload</span><span> </span><a href="#local-6989586621679187446"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a name="line-253"></a><a name="download"><a href="Network.Google.html#download"><span class="hs-identifier">download</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Network.Google.html#send"><span class="hs-identifier hs-var">send</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier hs-var">MediaDownload</span><span>
+</span><a name="line-254"></a><span>
+</span><a name="line-255"></a><span class="hs-comment">-- | Send a request with an attached &lt;https://tools.ietf.org/html/rfc2387 multipart/related media&gt; upload.</span><span>
+</span><a name="line-256"></a><span class="hs-comment">--</span><span>
+</span><a name="line-257"></a><span class="hs-comment">-- Equivalent to:</span><span>
+</span><a name="line-258"></a><span class="hs-comment">--</span><span>
+</span><a name="line-259"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-260"></a><span class="hs-comment">-- 'send' . 'MediaUpload'</span><span>
+</span><a name="line-261"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-262"></a><span class="hs-comment">--</span><span>
+</span><a name="line-263"></a><span class="hs-comment">-- Throws 'Error'.</span><span>
+</span><a name="line-264"></a><span class="hs-identifier">upload</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span> </span><a href="Network.Google.html#MonadGoogle"><span class="hs-identifier hs-type">MonadGoogle</span></a><span> </span><a href="#local-6989586621679187441"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-6989586621679187442"><span class="hs-identifier hs-type">m</span></a><span>
+</span><a name="line-265"></a><span>          </span><span class="hs-special">,</span><span> </span><a href="Network.Google.Auth.Scope.html#HasScope"><span class="hs-identifier hs-type">HasScope</span></a><span>    </span><a href="#local-6989586621679187441"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">MediaUpload</span><span> </span><a href="#local-6989586621679187443"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
+</span><a name="line-266"></a><span>          </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">GoogleRequest</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">MediaUpload</span><span> </span><a href="#local-6989586621679187443"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span>
+</span><a name="line-267"></a><span>          </span><span class="hs-special">)</span><span>
+</span><a name="line-268"></a><span>       </span><span class="hs-glyph">=&gt;</span><span> </span><a href="#local-6989586621679187443"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-269"></a><span>       </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Body</span><span>
+</span><a name="line-270"></a><span>       </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679187442"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Rs</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">MediaUpload</span><span> </span><a href="#local-6989586621679187443"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a name="line-271"></a><a name="upload"><a href="Network.Google.html#upload"><span class="hs-identifier">upload</span></a></a><span> </span><a name="local-6989586621679187459"><a href="#local-6989586621679187459"><span class="hs-identifier">x</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Network.Google.html#send"><span class="hs-identifier hs-var">send</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier hs-var">MediaUpload</span><span> </span><a href="#local-6989586621679187459"><span class="hs-identifier hs-var">x</span></a><span>
+</span><a name="line-272"></a><span>
+</span><a name="line-273"></a><span class="hs-identifier">hoistError</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">MonadThrow</span><span> </span><a href="#local-6989586621679187439"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-identifier hs-type">Either</span><span> </span><span class="hs-identifier hs-type">Error</span><span> </span><a href="#local-6989586621679187440"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-6989586621679187439"><span class="hs-identifier hs-type">m</span></a><span> </span><a href="#local-6989586621679187440"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-274"></a><a name="hoistError"><a href="Network.Google.html#hoistError"><span class="hs-identifier">hoistError</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">either</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">throwingM</span><span> </span><span class="hs-identifier hs-var">_Error</span><span class="hs-special">)</span><span> </span><span class="hs-identifier hs-var">return</span><span>
+</span><a name="line-275"></a><span>
+</span><a name="line-276"></a><span class="hs-comment">{- $usage
+
+The request and response types provided by the various @gogol-*@ libraries can
+be used with either 'send', 'upload', or 'download', depending upon the
+request's purpose. Namely, 'send' is the function you will most commonly use to
+send requests, with 'upload' and 'download' as convenience when dealing with
+streaming requests and responses respectively.
+
+To get started we will need to specify our Google Service credentials and
+create an 'Env' environment containing configuration which will be used by
+'runGoogle' to perform any actions. Your Google 'Credentials' can be supplied
+in a number of ways, by having Gogol retrieve
+&lt;https://developers.google.com/identity/protocols/application-default-credentials Application Default Credentials&gt;
+for use on Google App Engine and Google Compute Engine, or by explicitly
+supplying your credentials. See the &lt;#credentials Credentials&gt; section for
+information about supported credential mechanisms.
+
+The following example demonstrates uploading a file to Google
+&lt;https://cloud.google.com/storage/ Cloud Storage&gt; using 'ObjectsInsert' from
+&lt;http://hackage.haskell.org/package/gogol-storage gogol-storage&gt;:
+
+&gt; import Control.Lens           ((&amp;), (.~), (&lt;&amp;&gt;), (?~))
+&gt; import Data.Text              (Text)
+&gt; import Network.Google
+&gt; import Network.Google.Storage
+&gt; import System.IO              (stdout)
+&gt;
+&gt; import qualified Data.Text as Text
+&gt;
+&gt; example :: IO Object
+&gt; example = do
+&gt;     lgr  &lt;- newLogger Debug stdout                                               -- (1)
+&gt;     env  &lt;- newEnv &lt;&amp;&gt; (envLogger .~ lgr) . (envScopes .~ storageReadWriteScope) -- (2) (3)
+&gt;     body &lt;- sourceBody &quot;/path/to/image.jpg&quot;                                      -- (4)
+&gt;
+&gt;     let key = &quot;image.jpg&quot;
+&gt;         bkt = &quot;my-storage-bucket&quot;
+&gt;
+&gt;     runResourceT . runGoogle env $                                               -- (5)
+&gt;         upload (objectsInsert bkt object' &amp; oiName ?~ key) body
+
+Breaking down the above example, we have the following points of interest:
+
+1. A new 'Logger' to replace the default noop logger is created, set to print
+   debug information and errors to 'stdout'.
+
+2. The 'Env' is created using 'newEnv'. This creates a new HTTP 'Manager' and
+   retrieves the application default 'Credentials'.
+
+3. The lenses 'envLogger' and 'envScopes' are used to set the newly created
+   'Logger' and authorised OAuth2 scopes, respectively. Explicitly annotating the
+   'Env' with the scopes ensures that any mismatch between the remote
+   operations performed in 'runGoogle' and the credential scopes are raised as
+   errors at compile time.
+   See the &lt;#authorization Authorization&gt; section for more information.
+
+4. The streaming 'body' for the object is retrieved from a 'FilePath', and the
+   MIME type is calculated from the file extension.
+   The MIME type is used as the object's @Content-Type@ in Cloud Storage, and
+   can be overriden using the 'bodyContentType' lens as follows:
+
+    &gt; import Network.HTTP.Media ((//))
+    &gt;
+    &gt; body &lt;- sourceBody f &lt;&amp;&gt; bodyContentType .~ &quot;application&quot; // &quot;json&quot;
+
+5. Finally, we run the 'Google' computation using @'runResourceT' . 'runGoogle'@
+   which serialises the 'ObjectsInsert' type to a HTTP request and sets the streaming 'Body'.
+   The resulting 'Object' metadata is then parsed from a successful HTTP response.
+1
+Additional examples can be found can be found in the
+&lt;https://github.com/brendanhay/gogol/tree/develop/examples Gogol&gt; project's
+source control.
+
+-}</span><span>
+</span><a name="line-350"></a><span>
+</span><a name="line-351"></a><span class="hs-comment">{- $authorization #authorization#
+Each request within a particular 'runGoogle' context requires specific
+OAuth2 scopes to be have been authorized for the given credentials.
+
+For example, the Google Storage 'ObjectsInsert' has the associated scopes of:
+
+&gt; type Scopes ObjectsInsert =
+&gt;      '[&quot;https://www.googleapis.com/auth/cloud-platform&quot;,
+&gt;        &quot;https://www.googleapis.com/auth/devstorage.full_control&quot;,
+&gt;        &quot;https://www.googleapis.com/auth/devstorage.read_write&quot;]
+
+Multiple differing requests within a given 'runGoogle' context will then require
+the credentials to have a minimal set of these associated request scopes.
+This authorization information is represented as a type-level set,
+the 's' type parameter of 'Google' and 'MonadGoogle'. A mismatch
+of the sent request scopes and the 'Env' credential scopes results in a informative
+compile error.
+
+You can use 'allow' or the 'envScopes' lens to specify the 'Env's set of scopes.
+The various @gogol-*@ libraries export their individual scopes from @Network.Google.*&quot;
+and you can use the '(!)' combinator to combine these into a larger set.
+
+For example:
+
+&gt; import Control.Lens ((&lt;&amp;&gt;), (.~))
+&gt; import Network.Google
+&gt; import Network.Google.Monitoring
+&gt;
+&gt; main :: IO ()
+&gt; main = do
+&gt;     env &lt;- newEnv &lt;&amp;&gt; envScopes .~ (monitoringReadScope ! monitoringWriteScope ! computeReadOnlyScope)
+&gt;     ...
+
+&gt;&gt;&gt; :type env
+Env '[&quot;https://www.googleapis.com/auth/monitoring.read&quot;, &quot;https://www.googleapis.com/auth/monitoring.write&quot;, &quot;https://www.googleapis.com/auth/compute.readonly&quot;]
+
+-}</span><span>
+</span><a name="line-388"></a><span>
+</span><a name="line-389"></a><span class="hs-comment">{- $configuration
+Each service has its own configuration such as host, port, path prefix, and timeout
+which can be customized independent of other services.
+It can be desirable to customize this when mocking service endpoints or adjusting
+HTTP response timeouts for a specific request.
+
+For example, to point all calls to Google Compute to @https://localhost@ instead
+of the actual remote endpoint, we can use @Control.Monad.Reader.local@ in conjunction
+with 'override':
+
+&gt; import Control.Lens ((&amp;), (.~))
+&gt; import Control.Monad.Reader (local)
+&gt; import Network.Google
+&gt; import Network.Google.Compute
+&gt;
+&gt; local (override (computeService &amp; serviceHost .~ &quot;localhost&quot;)) $ do
+&gt;    _ &lt;- send $ instancesGet &quot;project&quot; &quot;zone&quot; &quot;instance-id&quot;
+&gt;    ...
+
+-}</span><span>
+</span><a name="line-409"></a><span>
+</span><a name="line-410"></a><span class="hs-comment">{- $credentials #credentials#
+By default 'newEnv' uses 'getApplicationDefault' to discover credentials
+from the underlying, following Google's official library behaviour.
+If you wish to manually specify 'Credentials' via 'newEnvWith', you can use one
+of the following supported credential mechanisms:
+
+* &quot;Network.Google.Auth.InstalledApplication&quot; - Applications installed on devices.
+* &quot;Network.Google.Auth.ServiceAccount&quot; - Applications deployed to custom environments.
+* &quot;Network.Google.Auth.ApplicationDefault&quot; - Applications deployed to App Engine (GAE) or Compute Engine (GCE).
+
+See &quot;Network.Google.Auth&quot; for more information.
+-}</span><span>
+</span><a name="line-422"></a><span>
+</span><a name="line-423"></a><span class="hs-comment">{- $async
+Requests can be sent asynchronously, but due to guarantees about resource closure
+require the use of &lt;http://hackage.haskell.org/package/lifted-async lifted-async&gt;.
+-}</span><span>
+</span><a name="line-427"></a><span>
+</span><a name="line-428"></a><span class="hs-comment">{- $metadata
+
+Google Compute metadata can be retrieve when running on GCE instances.
+See the documentation in &quot;Network.Google.Compute.Metadata&quot; for the available
+functions.
+-}</span><span>
+</span><a name="line-434"></a><span>
+</span><a name="line-435"></a><span class="hs-comment">{- $logging
+The exposed logging interface is a primitive 'Logger' function which gets
+threaded through service calls and serialisation routines. This allows the
+consuming library to output useful information and diagnostics.
+
+The 'newLogger' function can be used to construct a simple logger which writes
+output to a 'Handle', but in most production code you should probably consider
+using a more robust logging library such as
+&lt;http://hackage.haskell.org/package/tinylog tinylog&gt; or
+&lt;http://hackage.haskell.org/package/fast-logger fast-logger&gt;.
+-}</span><span>
+</span><a name="line-446"></a></pre></body></html>
